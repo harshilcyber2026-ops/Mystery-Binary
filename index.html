@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FlagVault CTF — Mystery Binary</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* ── Layout ── */
+    .ch-layout {
+      display: grid;
+      grid-template-columns: 1fr 330px;
+      gap: 2.4rem;
+      align-items: start;
+    }
+    @media(max-width:940px){ .ch-layout{ grid-template-columns:1fr; } }
+
+    /* ── Terminal blocks ── */
+    .term-block {
+      background: #010810;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1.2rem;
+    }
+    .term-bar {
+      background: var(--surface2);
+      padding: .45rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .tdot { width:10px; height:10px; border-radius:50%; }
+    .term-label {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      color: var(--text-dim);
+      letter-spacing: 1.5px;
+    }
+    .term-body {
+      padding: 1rem 1.3rem;
+      font-family: var(--font-mono);
+      font-size: .81rem;
+      line-height: 2;
+      overflow-x: auto;
+    }
+    .tp { color: var(--accent2); user-select:none; }   /* prompt */
+    .tc { color: var(--accent3); }                      /* command */
+    .to { color: var(--text-dim); }                     /* output */
+    .tf { color: var(--accent); font-weight:bold; }     /* flag */
+    .tm { color: #2a4a3a; font-style:italic; }          /* comment */
+
+    /* ── File info strip ── */
+    .bin-stats {
+      display: grid;
+      grid-template-columns: repeat(4,1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 1.8rem;
+    }
+    @media(max-width:580px){ .bin-stats{ grid-template-columns:1fr 1fr; } }
+    .bs-cell {
+      background: var(--surface2);
+      padding: 1.1rem 1rem;
+      text-align: center;
+    }
+    .bs-val {
+      font-family: var(--font-hud);
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: var(--accent);
+      display: block;
+      line-height: 1;
+      text-shadow: 0 0 14px var(--glow-c);
+    }
+    .bs-val.amber { color:var(--accent3); text-shadow:0 0 14px rgba(245,166,35,.4); }
+    .bs-val.red   { color:var(--accent2); text-shadow:0 0 14px var(--glow-r); }
+    .bs-val.purple{ color:#a78bfa;        text-shadow:0 0 14px rgba(124,58,237,.4); }
+    .bs-lbl {
+      font-family: var(--font-mono);
+      font-size: .58rem;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-top: .3rem;
+    }
+
+    /* ── Download button ── */
+    .dl-btn {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.4rem;
+      text-decoration: none;
+      color: var(--text-hi);
+      transition: all var(--transition);
+      margin-bottom: 2rem;
+    }
+    .dl-btn:hover {
+      border-color: var(--accent);
+      background: rgba(0,232,200,.05);
+      transform: translateX(4px);
+    }
+    .dl-icon { font-size:2rem; flex-shrink:0; }
+    .dl-name {
+      font-family: var(--font-hud);
+      font-size: .88rem;
+      color: var(--accent);
+      display: block;
+      margin-bottom: .2rem;
+    }
+    .dl-meta { font-family:var(--font-mono); font-size:.7rem; color:var(--text-dim); }
+    .dl-arr {
+      font-size:1.2rem; color:var(--text-dim);
+      margin-left:auto;
+      transition: all var(--transition);
+    }
+    .dl-btn:hover .dl-arr { transform:translateX(5px); color:var(--accent); }
+
+    /* ── Approach steps ── */
+    .steps { display:flex; flex-direction:column; gap:.7rem; margin-bottom:2rem; }
+    .step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .85rem 1.1rem;
+      transition: border-color var(--transition);
+    }
+    .step:hover { border-color:var(--border2); }
+    .step-n {
+      width:24px; height:24px;
+      border-radius:50%;
+      border:1px solid rgba(0,232,200,.4);
+      font-family:var(--font-hud);
+      font-size:.65rem; color:var(--accent);
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0;
+    }
+    .step-txt {
+      font-family:var(--font-mono);
+      font-size:.78rem;
+      color:var(--text);
+      line-height:1.65;
+    }
+    .step-txt strong { color:var(--accent3); }
+
+    /* ── Hex viewer (decorative) ── */
+    .hex-viewer {
+      background: #010810;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent4);
+      border-radius: var(--radius);
+      padding: 1rem 1.2rem;
+      font-family: var(--font-mono);
+      font-size: .74rem;
+      line-height: 1.9;
+      overflow-x: auto;
+      margin-bottom: 1.8rem;
+      position: relative;
+    }
+    .hex-viewer::before {
+      content: 'hexdump -C preview';
+      position: absolute;
+      top: .5rem; right: .8rem;
+      font-size: .58rem;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+    .hx-addr { color: var(--text-dim); }
+    .hx-byte { color: #4a7a8a; }
+    .hx-byte.flag-byte { color: var(--accent3); }
+    .hx-ascii { color: var(--text-dim); }
+    .hx-ascii .fa { color: var(--accent); }
+
+    /* ── Hints ── */
+    .hint-item {
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      overflow:hidden;
+      margin-bottom:.6rem;
+    }
+    .hint-toggle {
+      width:100%; text-align:left;
+      background:var(--surface2); border:none; cursor:pointer;
+      padding:.65rem 1rem;
+      display:flex; align-items:center; gap:.6rem;
+      font-family:var(--font-mono); font-size:.73rem;
+      color:var(--text-dim);
+      transition:background var(--transition),color var(--transition);
+    }
+    .hint-toggle:hover { background:rgba(245,166,35,.07); color:var(--accent3); }
+    .hint-num {
+      background:rgba(245,166,35,.12); color:var(--accent3);
+      border:1px solid rgba(245,166,35,.3);
+      padding:1px 7px; font-size:.6rem; letter-spacing:1px; border-radius:2px;
+    }
+    .hint-cost { margin-left:auto; color:var(--accent2); font-size:.64rem; }
+    .hint-body {
+      display:none; padding:.85rem 1rem;
+      font-family:var(--font-mono); font-size:.78rem;
+      color:var(--accent3);
+      background:rgba(245,166,35,.04);
+      border-top:1px solid rgba(245,166,35,.15);
+      line-height:1.7;
+    }
+    .hint-item.open .hint-toggle { color:var(--accent3); background:rgba(245,166,35,.06); }
+    .hint-item.open .hint-body { display:block; }
+
+    /* ── Sidebar cards ── */
+    .side-card {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:1.3rem 1.4rem;
+      margin-bottom:1.2rem;
+    }
+    .side-title {
+      font-family:var(--font-mono);
+      font-size:.62rem; letter-spacing:3px;
+      color:var(--text-dim); text-transform:uppercase;
+      margin-bottom:1rem; padding-bottom:.6rem;
+      border-bottom:1px solid var(--border);
+    }
+    .side-title::before { content:'// '; color:var(--accent); }
+    .mrow {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:.42rem 0;
+      border-bottom:1px solid rgba(22,64,96,.4);
+      font-family:var(--font-mono); font-size:.74rem;
+    }
+    .mrow:last-child { border-bottom:none; }
+    .mk { color:var(--text-dim); }
+    .mv { color:var(--text-hi); }
+    .mv.g { color:var(--accent); }
+    .mv.a { color:var(--accent3); }
+    .mv.r { color:var(--accent2); }
+
+    /* progress */
+    .prog-wrap { margin-top:.8rem; }
+    .prog-lbl {
+      font-family:var(--font-mono); font-size:.62rem;
+      color:var(--text-dim);
+      display:flex; justify-content:space-between;
+      margin-bottom:.3rem;
+    }
+    .prog-bar { height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+    .prog-fill {
+      height:100%; background:var(--accent); border-radius:2px;
+      width:0; transition:width 1.4s cubic-bezier(.22,1,.36,1);
+    }
+
+    /* strings cheatsheet */
+    .str-table {
+      width:100%; border-collapse:collapse;
+      font-family:var(--font-mono); font-size:.72rem;
+    }
+    .str-table th {
+      text-align:left; color:var(--text-dim);
+      font-size:.58rem; letter-spacing:2px; text-transform:uppercase;
+      padding:.35rem .5rem; border-bottom:1px solid var(--border);
+    }
+    .str-table td {
+      padding:.45rem .5rem;
+      border-bottom:1px solid rgba(22,64,96,.35);
+      vertical-align:top;
+    }
+    .str-table tr:last-child td { border-bottom:none; }
+    .str-table tr:hover td { background:rgba(0,232,200,.03); }
+    .sc { color:var(--accent); white-space:nowrap; }
+    .sd { color:var(--text-dim); }
+
+    /* submit */
+    .submit-section {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); padding:2rem;
+      margin-top:2.5rem; position:relative; overflow:hidden;
+    }
+    .submit-section::before {
+      content:'SUBMIT'; position:absolute; right:1.5rem; top:1rem;
+      font-family:var(--font-hud); font-size:4rem; font-weight:900;
+      color:rgba(0,232,200,.03); pointer-events:none; line-height:1;
+    }
+    .sub-title {
+      font-family:var(--font-hud); font-size:1.05rem;
+      color:var(--text-hi); margin-bottom:.3rem;
+      display:flex; align-items:center; gap:.6rem;
+    }
+    .sub-title::before { content:'⚑'; color:var(--accent2); }
+    .sub-sub {
+      font-family:var(--font-mono); font-size:.72rem;
+      color:var(--text-dim); margin-bottom:1.5rem;
+    }
+    .flag-row { display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end; }
+    .flag-wrap { flex:1; min-width:260px; position:relative; }
+    .flag-prefix {
+      position:absolute; left:1rem; top:50%;
+      transform:translateY(-50%);
+      font-family:var(--font-mono); font-size:.78rem;
+      color:var(--accent2); pointer-events:none; white-space:nowrap;
+    }
+    .flag-input { padding-left:7.8rem !important; letter-spacing:1px; }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-7px)}
+      40%{transform:translateX(7px)}
+      60%{transform:translateX(-4px)}
+      80%{transform:translateX(4px)}
+    }
+    .shake { animation:shake .35s ease; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="#" class="nav-brand">
+    <span class="bracket">[</span><span class="brand-flag">⚑</span>FLAG<span style="color:var(--accent)">VAULT</span><span class="bracket">]</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#">Home</a></li>
+    <li><a href="#" class="active">Challenges</a></li>
+    <li><a href="#">Scoreboard</a></li>
+    <li><a href="#">Rules</a></li>
+  </ul>
+  <div class="nav-status"><span class="status-dot"></span>CTF LIVE</div>
+</nav>
+
+<!-- PAGE -->
+<div class="page-wrap">
+
+  <!-- Breadcrumb -->
+  <div style="font-family:var(--font-mono);font-size:.68rem;color:var(--text-dim);margin-bottom:2rem;display:flex;align-items:center;gap:.5rem;">
+    <a href="#" style="color:var(--text-dim)">challenges</a><span>/</span>
+    <a href="#" style="color:var(--text-dim)">forensics</a><span>/</span>
+    <span style="color:var(--accent)">mystery-binary</span>
+  </div>
+
+  <!-- Header -->
+  <div class="page-header" data-index="BIN">
+    <div class="page-eyebrow">🔬 Forensics / Binary · Challenge #04</div>
+    <h1 class="page-title">Mystery <span class="hl2">Binary</span></h1>
+    <p class="page-desc">A suspicious binary file was found on a compromised host. The flag is embedded somewhere inside — hidden among readable strings in raw binary data.</p>
+  </div>
+
+  <div class="ch-layout">
+
+    <!-- LEFT -->
+    <div>
+
+      <!-- File stats -->
+      <div class="sec-divider"><h3>Target File</h3></div>
+      <div class="bin-stats">
+        <div class="bs-cell">
+          <span class="bs-val">7.5 KB</span>
+          <div class="bs-lbl">File Size</div>
+        </div>
+        <div class="bs-cell">
+          <span class="bs-val purple">ELF</span>
+          <div class="bs-lbl">File Type</div>
+        </div>
+        <div class="bs-cell">
+          <span class="bs-val amber">x86-64</span>
+          <div class="bs-lbl">Arch</div>
+        </div>
+        <div class="bs-cell">
+          <span class="bs-val red">1</span>
+          <div class="bs-lbl">Hidden Flag</div>
+        </div>
+      </div>
+
+      <!-- Download -->
+      <a class="dl-btn" href="files/mystery.bin" download="mystery.bin">
+        <span class="dl-icon">⚙️</span>
+        <div>
+          <span class="dl-name">mystery.bin</span>
+          <span class="dl-meta">ELF 64-bit · 7.5 KB · Flag hidden in readable strings</span>
+        </div>
+        <span class="dl-arr">→</span>
+      </a>
+
+      <!-- Scenario -->
+      <div class="sec-divider"><h3>Scenario</h3></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent4);border-radius:var(--radius);padding:1.2rem 1.4rem;margin-bottom:2rem;font-family:var(--font-mono);font-size:.82rem;color:var(--text);line-height:1.85;">
+        This binary was recovered from a compromised Linux server. It's a compiled ELF executable mixed with binary noise, junk bytes, and library references. Somewhere inside its raw bytes is a readable ASCII string containing the flag.<br><br>
+        <span style="color:var(--accent3);">Every binary leaks strings.</span> Compiled programs always contain human-readable text — function names, error messages, paths, version info — and attackers sometimes hide data in plain sight this way. Use the right tool to extract all printable strings and find the one that matters.
+      </div>
+
+      <!-- How to solve -->
+      <div class="sec-divider"><h3>How To Solve</h3></div>
+      <div class="steps">
+        <div class="step">
+          <span class="step-n">1</span>
+          <div class="step-txt"><strong>Download</strong> <code>mystery.bin</code> from the button above.</div>
+        </div>
+        <div class="step">
+          <span class="step-n">2</span>
+          <div class="step-txt"><strong>Run the <code>strings</code> command</strong> — it scans binary files and prints all sequences of printable characters (≥4 chars by default). This is a standard forensics tool.</div>
+        </div>
+        <div class="step">
+          <span class="step-n">3</span>
+          <div class="step-txt"><strong>Pipe into grep</strong> to filter for <code>FlagVault</code>. The flag format is known, so searching for it is instant: <code>strings mystery.bin | grep FlagVault</code></div>
+        </div>
+        <div class="step">
+          <span class="step-n">4</span>
+          <div class="step-txt"><strong>Submit</strong> the full <code>FlagVault{...}</code> string below.</div>
+        </div>
+      </div>
+
+      <!-- Hex preview -->
+      <div class="sec-divider"><h3>Hex Dump Preview (around flag location)</h3></div>
+      <div class="hex-viewer">
+        <div><span class="hx-addr">00001890</span>  <span class="hx-byte">7e 73 5a 0a 7c 2f 1e 91</span>  <span class="hx-byte">0d 3f 8c bb a1 2e 46 09</span>  <span class="hx-ascii">|~sZ|/...?....F.|</span></div>
+        <div><span class="hx-addr">000018a0</span>  <span class="hx-byte">00 00 00 00 00 00 00 00</span>  <span class="hx-byte">23 23 20 42 45 47 49 4e</span>  <span class="hx-ascii">|........## BEGIN|</span></div>
+        <div><span class="hx-addr">000018b0</span>  <span class="hx-byte">20 48 49 44 44 45 4e 20</span>  <span class="hx-byte">44 41 54 41 20 23 23 00</span>  <span class="hx-ascii">| HIDDEN DATA ##.|</span></div>
+        <div><span class="hx-addr">000018c0</span>  <span class="hx-byte">d4 2f 7a 1c 88 a3 b0 0e</span>  <span class="hx-byte">f9 12 3d 7b 4a 26 c5 9d</span>  <span class="hx-ascii">|../z......={J&amp;..|</span></div>
+        <div><span class="hx-addr">000018d0</span>  <span class="hx-byte flag-byte">46 6c 61 67 56 61 75 6c</span>  <span class="hx-byte flag-byte">74 7b 73 74 72 31 6e 67</span>  <span class="hx-ascii">|<span class="fa">FlagVaul</span><span class="fa">t{str1ng</span>|</span></div>
+        <div><span class="hx-addr">000018e0</span>  <span class="hx-byte flag-byte">73 5f 34 72 33 5f 70 30</span>  <span class="hx-byte flag-byte">77 33 72 66 75 6c 7d 00</span>  <span class="hx-ascii">|<span class="fa">s_4r3_p0</span><span class="fa">w3rful}.</span>|</span></div>
+        <div><span class="hx-addr">000018f0</span>  <span class="hx-byte">e1 2a 1f 0b 7c 3a 2e 69</span>  <span class="hx-byte">55 04 9c f3 17 8d a6 b2</span>  <span class="hx-ascii">|.*...:iU.......| </span></div>
+        <div><span class="hx-addr">00001900</span>  <span class="hx-byte">00 00 00 00 00 00 00 00</span>  <span class="hx-byte">23 23 20 45 4e 44 20 48</span>  <span class="hx-ascii">|........## END H|</span></div>
+      </div>
+
+      <!-- Command demos -->
+      <div class="sec-divider"><h3>Command Examples</h3></div>
+
+      <div class="term-block">
+        <div class="term-bar">
+          <span class="tdot" style="background:#ff5f56"></span>
+          <span class="tdot" style="background:#ffbd2e"></span>
+          <span class="tdot" style="background:#27c93f"></span>
+          <span class="term-label">bash — strings + grep</span>
+        </div>
+        <div class="term-body">
+          <div><span class="tm"># Simplest approach — pipe strings output into grep</span></div>
+          <div><span class="tp">$ </span><span class="tc">strings mystery.bin | grep FlagVault</span></div>
+          <div><span class="tf">FlagVault{str1ngs_4r3_p0w3rful}</span></div>
+        </div>
+      </div>
+
+      <div class="term-block">
+        <div class="term-bar">
+          <span class="tdot" style="background:#ff5f56"></span>
+          <span class="tdot" style="background:#ffbd2e"></span>
+          <span class="tdot" style="background:#27c93f"></span>
+          <span class="term-label">bash — strings with context</span>
+        </div>
+        <div class="term-body">
+          <div><span class="tm"># Show lines before and after the flag</span></div>
+          <div><span class="tp">$ </span><span class="tc">strings mystery.bin | grep -A2 -B2 "FlagVault"</span></div>
+          <div><span class="to">## BEGIN HIDDEN DATA ##</span></div>
+          <div><span class="tf">FlagVault{str1ngs_4r3_p0w3rful}</span></div>
+          <div><span class="to">## END HIDDEN DATA ##</span></div>
+        </div>
+      </div>
+
+      <div class="term-block">
+        <div class="term-bar">
+          <span class="tdot" style="background:#ff5f56"></span>
+          <span class="tdot" style="background:#ffbd2e"></span>
+          <span class="tdot" style="background:#27c93f"></span>
+          <span class="term-label">bash — strings with line number</span>
+        </div>
+        <div class="term-body">
+          <div><span class="tm"># -n flag shows which string number it is</span></div>
+          <div><span class="tp">$ </span><span class="tc">strings -n 4 mystery.bin | grep -n "FlagVault"</span></div>
+          <div><span class="to">131:</span><span class="tf">FlagVault{str1ngs_4r3_p0w3rful}</span></div>
+        </div>
+      </div>
+
+      <div class="term-block">
+        <div class="term-bar">
+          <span class="tdot" style="background:#ff5f56"></span>
+          <span class="tdot" style="background:#ffbd2e"></span>
+          <span class="tdot" style="background:#27c93f"></span>
+          <span class="term-label">bash — hexdump approach</span>
+        </div>
+        <div class="term-body">
+          <div><span class="tm"># Alternative: hexdump with grep on ASCII column</span></div>
+          <div><span class="tp">$ </span><span class="tc">hexdump -C mystery.bin | grep -a "Flag"</span></div>
+          <div><span class="to">000018d0  46 6c 61 67 56 61 75 6c  74 7b 73 74 72 31 6e 67  |</span><span class="tf">FlagVaultr1ng</span><span class="to">|</span></div>
+        </div>
+      </div>
+
+      <div class="term-block">
+        <div class="term-bar">
+          <span class="tdot" style="background:#ff5f56"></span>
+          <span class="tdot" style="background:#ffbd2e"></span>
+          <span class="tdot" style="background:#27c93f"></span>
+          <span class="term-label">python3 — cross-platform alternative</span>
+        </div>
+        <div class="term-body">
+          <div><span class="tm"># Pure Python — works on Windows too</span></div>
+          <div><span class="tp">$ </span><span class="tc">python3 -c "import re; d=open('mystery.bin','rb').read(); print(re.search(rb'FlagVault\{[^}]+\}', d).group().decode())"</span></div>
+          <div><span class="tf">FlagVault{str1ngs_4r3_p0w3rful}</span></div>
+        </div>
+      </div>
+
+      <div class="term-block">
+        <div class="term-bar">
+          <span class="tdot" style="background:#ff5f56"></span>
+          <span class="tdot" style="background:#ffbd2e"></span>
+          <span class="tdot" style="background:#27c93f"></span>
+          <span class="term-label">file command — identify binary type first</span>
+        </div>
+        <div class="term-body">
+          <div><span class="tm"># Always identify file type before analysis</span></div>
+          <div><span class="tp">$ </span><span class="tc">file mystery.bin</span></div>
+          <div><span class="to">mystery.bin: ELF 64-bit LSB executable, x86-64, no section header</span></div>
+          <div></div>
+          <div><span class="tp">$ </span><span class="tc">strings mystery.bin | wc -l</span></div>
+          <div><span class="to">138</span></div>
+          <div></div>
+          <div><span class="tp">$ </span><span class="tc">strings mystery.bin | grep FlagVault</span></div>
+          <div><span class="tf">FlagVault{str1ngs_4r3_p0w3rful}</span></div>
+        </div>
+      </div>
+
+      <!-- Hints -->
+      <div class="sec-divider"><h3>Hints</h3></div>
+
+      <div class="hint-item" id="h1">
+        <button class="hint-toggle" onclick="toggleHint('h1')">
+          <span class="hint-num">HINT 01</span>
+          What tool do I use on binary files?
+          <span class="hint-cost">Free</span>
+        </button>
+        <div class="hint-body">
+          Use <code>strings</code> — a standard Unix utility that extracts printable character sequences from binary files. By default it prints strings of 4+ printable characters.<br><br>
+          Syntax: <code>strings &lt;filename&gt;</code>
+        </div>
+      </div>
+
+      <div class="hint-item" id="h2">
+        <button class="hint-toggle" onclick="toggleHint('h2')">
+          <span class="hint-num">HINT 02</span>
+          Exact command to solve this
+          <span class="hint-cost">−25 pts</span>
+        </button>
+        <div class="hint-body">
+          <code>strings mystery.bin | grep FlagVault</code><br><br>
+          This extracts all readable strings from the binary and filters for the one containing the flag.
+        </div>
+      </div>
+
+      <div class="hint-item" id="h3">
+        <button class="hint-toggle" onclick="toggleHint('h3')">
+          <span class="hint-num">HINT 03</span>
+          I'm on Windows — strings isn't installed
+          <span class="hint-cost">Free</span>
+        </button>
+        <div class="hint-body">
+          Options for Windows users:<br><br>
+          1. <strong>Sysinternals strings.exe</strong> — free from Microsoft: <code>strings.exe mystery.bin | findstr FlagVault</code><br>
+          2. <strong>Git Bash / WSL</strong> — both have the strings command built in<br>
+          3. <strong>Python one-liner:</strong> <code>python3 -c "import re; d=open('mystery.bin','rb').read(); print(re.search(rb'FlagVault\{[^}]+\}',d).group().decode())"</code>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="submit-section">
+        <div class="sub-title">Submit Your Flag</div>
+        <p class="sub-sub">Run <code>strings mystery.bin | grep FlagVault</code> and paste the flag below.</p>
+        <div class="flag-row">
+          <div class="flag-wrap">
+            <span class="flag-prefix">FlagVault{</span>
+            <input type="text" class="form-control flag-input" id="flagInput"
+              placeholder="str1ngs_..." autocomplete="off" spellcheck="false"
+              onkeydown="if(event.key==='Enter')checkFlag()"/>
+          </div>
+          <button class="btn btn-primary" onclick="checkFlag()">⚑ Submit</button>
+          <button class="btn btn-danger"  onclick="clearInput()">✕ Clear</button>
+        </div>
+        <div class="submit-result" id="flagResult"></div>
+      </div>
+
+    </div><!-- /left -->
+
+    <!-- SIDEBAR -->
+    <aside>
+
+      <div class="side-card">
+        <div class="side-title">Challenge Info</div>
+        <div class="mrow"><span class="mk">Category</span><span class="mv"><span class="tag tag-purple">Forensics</span></span></div>
+        <div class="mrow"><span class="mk">Sub-type</span><span class="mv"><span class="tag tag-amber">Binary</span></span></div>
+        <div class="mrow"><span class="mk">Difficulty</span><span class="mv"><span class="tag tag-green">Easy</span></span></div>
+        <div class="mrow"><span class="mk">Points</span><span class="mv a">200 pts</span></div>
+        <div class="mrow"><span class="mk">Author</span><span class="mv g">FlagVault</span></div>
+        <div class="mrow"><span class="mk">File</span><span class="mv">mystery.bin</span></div>
+        <div class="mrow"><span class="mk">File Type</span><span class="mv">ELF 64-bit</span></div>
+        <div class="mrow"><span class="mk">Solves</span><span class="mv g" id="solveCount">178</span></div>
+        <div class="prog-wrap">
+          <div class="prog-lbl"><span>Solve rate</span><span id="solveRate">68%</span></div>
+          <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-title">strings Cheatsheet</div>
+        <table class="str-table">
+          <tr><th>Flag</th><th>Effect</th></tr>
+          <tr><td class="sc"><code>-n N</code></td><td class="sd">Min string length (default 4)</td></tr>
+          <tr><td class="sc"><code>-a</code></td><td class="sd">Scan entire file</td></tr>
+          <tr><td class="sc"><code>-e b</code></td><td class="sd">Big-endian 16-bit</td></tr>
+          <tr><td class="sc"><code>-e l</code></td><td class="sd">Little-endian 16-bit</td></tr>
+          <tr><td class="sc"><code>-t x</code></td><td class="sd">Print file offset (hex)</td></tr>
+          <tr><td class="sc"><code>-t d</code></td><td class="sd">Print file offset (decimal)</td></tr>
+          <tr><td class="sc"><code>-o</code></td><td class="sd">Same as -t o (octal)</td></tr>
+          <tr><td class="sc"><code>--help</code></td><td class="sd">Show all options</td></tr>
+        </table>
+      </div>
+
+      <div class="side-card">
+        <div class="side-title">Related Tools</div>
+        <div class="tools-grid" style="grid-template-columns:1fr 1fr;">
+          <div class="tool-card" style="--tool-color:var(--accent);">
+            <span class="tool-icon">🔤</span>
+            <div class="tool-name">strings</div>
+            <span class="tool-tag">forensics</span>
+            <p class="tool-desc">Extract readable text from any binary file.</p>
+          </div>
+          <div class="tool-card" style="--tool-color:var(--accent3);">
+            <span class="tool-icon">🔢</span>
+            <div class="tool-name">hexdump</div>
+            <span class="tool-tag">hex view</span>
+            <p class="tool-desc">View raw bytes and ASCII simultaneously.</p>
+          </div>
+          <div class="tool-card" style="--tool-color:var(--accent2);">
+            <span class="tool-icon">🏷️</span>
+            <div class="tool-name">file</div>
+            <span class="tool-tag">identify</span>
+            <p class="tool-desc">Detect file type from magic bytes.</p>
+          </div>
+          <div class="tool-card" style="--tool-color:var(--accent4);">
+            <span class="tool-icon">🔍</span>
+            <div class="tool-name">binwalk</div>
+            <span class="tool-tag">analysis</span>
+            <p class="tool-desc">Scan for embedded files and code signatures.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-card" style="border-left:3px solid var(--accent2);">
+        <div class="side-title">Flag Format</div>
+        <div style="font-family:var(--font-mono);font-size:.82rem;color:var(--text-dim);line-height:1.9;">
+          ⚑ <strong style="color:var(--accent2);">FlagVault{</strong><span style="color:var(--text-dim);">your_flag</span><strong style="color:var(--accent2);">}</strong><br>
+          <span style="font-size:.7rem;color:var(--text-dim);">Submit the full string found in the binary.</span>
+        </div>
+      </div>
+
+    </aside>
+
+  </div><!-- /ch-layout -->
+</div><!-- /page-wrap -->
+
+<footer class="footer">
+  <div class="footer-brand">FLAG<span>VAULT</span> CTF</div>
+  <div class="footer-copy">© 2024 FlagVault · Forensics / Binary · Mystery Binary</div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
