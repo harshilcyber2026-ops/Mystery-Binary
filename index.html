@@ -328,12 +328,6 @@
   <a href="#" class="nav-brand">
     <span class="bracket">[</span><span class="brand-flag">⚑</span>FLAG<span style="color:var(--accent)">VAULT</span><span class="bracket">]</span>
   </a>
-  <ul class="nav-links">
-    <li><a href="#">Home</a></li>
-    <li><a href="#" class="active">Challenges</a></li>
-    <li><a href="#">Scoreboard</a></li>
-    <li><a href="#">Rules</a></li>
-  </ul>
   <div class="nav-status"><span class="status-dot"></span>CTF LIVE</div>
 </nav>
 
@@ -524,64 +518,6 @@
           <div><span class="tp">$ </span><span class="tc">strings mystery.bin | grep FlagVault</span></div>
           <div><span class="tf">FlagVault{str1ngs_4r3_p0w3rful}</span></div>
         </div>
-      </div>
-
-      <!-- Hints -->
-      <div class="sec-divider"><h3>Hints</h3></div>
-
-      <div class="hint-item" id="h1">
-        <button class="hint-toggle" onclick="toggleHint('h1')">
-          <span class="hint-num">HINT 01</span>
-          What tool do I use on binary files?
-          <span class="hint-cost">Free</span>
-        </button>
-        <div class="hint-body">
-          Use <code>strings</code> — a standard Unix utility that extracts printable character sequences from binary files. By default it prints strings of 4+ printable characters.<br><br>
-          Syntax: <code>strings &lt;filename&gt;</code>
-        </div>
-      </div>
-
-      <div class="hint-item" id="h2">
-        <button class="hint-toggle" onclick="toggleHint('h2')">
-          <span class="hint-num">HINT 02</span>
-          Exact command to solve this
-          <span class="hint-cost">−25 pts</span>
-        </button>
-        <div class="hint-body">
-          <code>strings mystery.bin | grep FlagVault</code><br><br>
-          This extracts all readable strings from the binary and filters for the one containing the flag.
-        </div>
-      </div>
-
-      <div class="hint-item" id="h3">
-        <button class="hint-toggle" onclick="toggleHint('h3')">
-          <span class="hint-num">HINT 03</span>
-          I'm on Windows — strings isn't installed
-          <span class="hint-cost">Free</span>
-        </button>
-        <div class="hint-body">
-          Options for Windows users:<br><br>
-          1. <strong>Sysinternals strings.exe</strong> — free from Microsoft: <code>strings.exe mystery.bin | findstr FlagVault</code><br>
-          2. <strong>Git Bash / WSL</strong> — both have the strings command built in<br>
-          3. <strong>Python one-liner:</strong> <code>python3 -c "import re; d=open('mystery.bin','rb').read(); print(re.search(rb'FlagVault\{[^}]+\}',d).group().decode())"</code>
-        </div>
-      </div>
-
-      <!-- Submit -->
-      <div class="submit-section">
-        <div class="sub-title">Submit Your Flag</div>
-        <p class="sub-sub">Run <code>strings mystery.bin | grep FlagVault</code> and paste the flag below.</p>
-        <div class="flag-row">
-          <div class="flag-wrap">
-            <span class="flag-prefix">FlagVault{</span>
-            <input type="text" class="form-control flag-input" id="flagInput"
-              placeholder="str1ngs_..." autocomplete="off" spellcheck="false"
-              onkeydown="if(event.key==='Enter')checkFlag()"/>
-          </div>
-          <button class="btn btn-primary" onclick="checkFlag()">⚑ Submit</button>
-          <button class="btn btn-danger"  onclick="clearInput()">✕ Clear</button>
-        </div>
-        <div class="submit-result" id="flagResult"></div>
       </div>
 
     </div><!-- /left -->
